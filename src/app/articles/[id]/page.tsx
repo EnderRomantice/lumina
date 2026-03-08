@@ -48,7 +48,7 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
 
     const handleWordClick = async (wordStr: string, wordId: string) => {
         // Clean punctuation around the word
-        const cleanedWord = wordStr.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim().toLowerCase();
+        const cleanedWord = wordStr.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").trim().toLowerCase();
 
         if (!cleanedWord) return;
 
@@ -129,7 +129,7 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
             }
 
             // Also check if it's just punctuation and shouldn't be clickable
-            const isJustPunctuation = /^[.,\/#!$%\^&\*;:{}=\-_`~()]+$/.test(wordOrSpace);
+            const isJustPunctuation = /^[^a-zA-Z0-9]+$/.test(wordOrSpace);
 
             if (isJustPunctuation) {
                 return <span key={`punct-${globalWordIndex}-${i}`}>{wordOrSpace}</span>;
@@ -258,6 +258,15 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
                         h3: ({ node, ...props }) => <h3 className="text-xl font-bold mt-4 mb-2" {...props}><TranslateableContent>{props.children}</TranslateableContent></h3>,
                         li: ({ node, ...props }) => <li className="mb-1 leading-relaxed text-xl" {...props}><TranslateableContent>{props.children}</TranslateableContent></li>,
                         blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-primary/50 pl-4 py-1 italic bg-muted/30 rounded-r-lg my-4" {...props}><TranslateableContent>{props.children}</TranslateableContent></blockquote>,
+                        img: ({ node, ...props }) => <img className="rounded-xl border border-border/50 shadow-md my-4 max-w-full" alt={props.alt || ""} {...props} />,
+                        pre: ({ node, ...props }) => <pre className="p-4 rounded-xl overflow-x-auto text-sm font-mono bg-slate-950 text-slate-50 leading-relaxed my-4 border border-border/50 shadow-md" {...props} />,
+                        code: ({ node, className, children, ...props }) => {
+                            const isInline = !className?.includes('language-') && !String(children).includes('\n');
+                            if (isInline) {
+                                return <code className="bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono text-primary/80" {...props}>{children}</code>;
+                            }
+                            return <code className={className} {...props}>{children}</code>;
+                        },
                     }}
                 >
                     {article.content}
