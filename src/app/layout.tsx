@@ -3,6 +3,7 @@ import { Inter, Lora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import Link from "next/link";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,9 +37,10 @@ export default function RootLayout({
                 Lumina
               </Link>
               <nav className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
+                <Link href="/dashboard" className="hover:text-primary transition-colors">Personal Center</Link>
                 <Link href="/articles" className="hover:text-primary transition-colors">Article Bank</Link>
                 <Link href="/words" className="hover:text-primary transition-colors">Word Bank</Link>
-                <Link href="/dashboard" className="hover:text-primary transition-colors">Personal Center</Link>
+                <Link href="/profile" className="hover:text-primary transition-colors">Profile</Link>
               </nav>
             </div>
           </header>
@@ -46,6 +48,7 @@ export default function RootLayout({
             {children}
           </main>
         </AuthProvider>
+        <Toaster position="top-center" />
       </body>
     </html>
   );

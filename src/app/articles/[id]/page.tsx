@@ -16,7 +16,11 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
 
     // Translation state
     const [selectedWord, setSelectedWord] = useState<string | null>(null);
-    const [translation, setTranslation] = useState<string | null>(null);
+    const [translationData, setTranslationData] = useState<{
+        translation: string;
+        phonetic?: string;
+        meanings?: { partOfSpeech: string, definitions: string[] }[];
+    } | null>(null);
     const [translating, setTranslating] = useState(false);
     const [popoverOpen, setPopoverOpen] = useState<{ [wordId: string]: boolean }>({});
     const [tagsInput, setTagsInput] = useState("");
@@ -54,7 +58,7 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
         // Fetch Translation
         setSelectedWord(cleanedWord);
         setTranslating(true);
-        setTranslation(null);
+        setTranslationData(null);
 
         // Close others
         setPopoverOpen({ [wordId]: true });
@@ -64,25 +68,29 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
             const res = await fetch(`/api/translate?word=${encodeURIComponent(cleanedWord)}`);
             if (res.ok) {
                 const data = await res.json();
-                setTranslation(data.translation);
+                setTranslationData(data);
             } else {
-                setTranslation("No precise definition found.");
+                setTranslationData({ translation: "No precise definition found." });
             }
         } catch {
-            setTranslation("Error fetching definition.");
+            setTranslationData({ translation: "Error fetching definition." });
         } finally {
             setTranslating(false);
         }
     };
 
     const handleSaveWord = async () => {
-        if (!selectedWord || !translation) return;
+        if (!selectedWord || !translationData?.translation) return;
 
         try {
             const res = await fetch("/api/words", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ word: selectedWord, translation, tags: tagsInput }),
+                body: JSON.stringify({
+                    word: selectedWord,
+                    translation: JSON.stringify(translationData),
+                    tags: tagsInput
+                }),
             });
 
             if (res.ok) {
@@ -108,8 +116,10 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
 
     if (!article) return null;
 
-    // Simple tokenization by whitespace.
-    const words = article.content.split(/\s+/);
+    // Split text by lines, then by words
+    const lines = article.content.split('\n');
+
+    let globalWordIndex = 0;
 
     return (
         <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-700">
@@ -125,66 +135,92 @@ export default function ArticleReadPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="prose prose-lg dark:prose-invert max-w-none font-serif leading-relaxed text-foreground/90">
-                <p className="indent-8 text-xl tracking-wide">
-                    {words.map((word, i) => {
-                        const wordId = `word-${i}`;
-                        return (
-                            <span key={i}>
-                                <Popover
-                                    open={popoverOpen[wordId] || false}
-                                    onOpenChange={(open) => {
-                                        if (!open) setPopoverOpen((prev) => ({ ...prev, [wordId]: false }));
-                                    }}
-                                >
-                                    <PopoverTrigger
-                                        onClick={() => handleWordClick(word, wordId)}
-                                        className={`cursor-pointer transition-colors duration-200 hover:bg-primary/20 hover:text-primary rounded-md px-0.5 ${popoverOpen[wordId] ? 'bg-primary/20 text-primary' : ''}`}
-                                    >
-                                        {word}
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-80 rounded-2xl p-4 shadow-lg border-border/50 animate-in zoom-in-95">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-serif font-bold text-lg text-primary capitalize">{selectedWord}</h4>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary" onClick={() => {
-                                                    const utterance = new SpeechSynthesisUtterance(selectedWord || "");
-                                                    utterance.lang = "en-US";
-                                                    window.speechSynthesis.speak(utterance);
-                                                }}>
-                                                    <Volume2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                {lines.map((line, lineIndex) => {
+                    if (!line.trim()) return <br key={`br-${lineIndex}`} />;
+                    const words = line.split(/\s+/);
+                    return (
+                        <p key={`line-${lineIndex}`} className="indent-8 tracking-wide text-xl mb-4">
+                            {words.map((word) => {
+                                const wordId = `word-${globalWordIndex++}`;
+                                return (
+                                    <span key={wordId}>
+                                        <Popover
+                                            open={popoverOpen[wordId] || false}
+                                            onOpenChange={(open) => {
+                                                if (!open) setPopoverOpen((prev) => ({ ...prev, [wordId]: false }));
+                                            }}
+                                        >
+                                            <PopoverTrigger
+                                                onClick={() => handleWordClick(word, wordId)}
+                                                className={`cursor-pointer transition-colors duration-200 hover:bg-primary/20 hover:text-primary rounded-md px-0.5 ${popoverOpen[wordId] ? 'bg-primary/20 text-primary' : ''}`}
+                                            >
+                                                {word}
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-80 rounded-2xl p-4 shadow-lg border-border/50 animate-in zoom-in-95">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="font-serif font-bold text-lg text-primary capitalize">{selectedWord}</h4>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary" onClick={() => {
+                                                            const utterance = new SpeechSynthesisUtterance(selectedWord || "");
+                                                            utterance.lang = "en-US";
+                                                            window.speechSynthesis.speak(utterance);
+                                                        }}>
+                                                            <Volume2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
 
-                                            {translating ? (
-                                                <div className="flex items-center text-sm text-muted-foreground">
-                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Fetching definition...
-                                                </div>
-                                            ) : (
-                                                <p className="text-sm text-foreground/80 leading-relaxed font-sans bg-muted/30 p-3 rounded-xl">
-                                                    {translation}
-                                                </p>
-                                            )}
+                                                    {translating ? (
+                                                        <div className="flex items-center text-sm text-muted-foreground p-2">
+                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Fetching definition...
+                                                        </div>
+                                                    ) : translationData ? (
+                                                        <div className="space-y-3 bg-muted/30 p-3 rounded-xl">
+                                                            <div>
+                                                                <p className="text-base font-medium text-foreground pb-1">
+                                                                    {translationData.translation}
+                                                                </p>
+                                                                {translationData.phonetic && (
+                                                                    <p className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded-md inline-block">
+                                                                        {translationData.phonetic}
+                                                                    </p>
+                                                                )}
+                                                            </div>
 
-                                            {!translating && selectedWord && (
-                                                <div className="space-y-3 mt-4">
-                                                    <Input
-                                                        placeholder="Tags (comma separated, e.g. verb, hard)"
-                                                        value={tagsInput}
-                                                        onChange={(e) => setTagsInput(e.target.value)}
-                                                        className="h-8 text-xs rounded-xl bg-muted/50 border-none"
-                                                    />
-                                                    <Button onClick={handleSaveWord} className="w-full rounded-xl gap-2" variant="secondary">
-                                                        <BookmarkPlus className="h-4 w-4" /> Save to Word Bank
-                                                    </Button>
+                                                            {translationData.meanings && translationData.meanings.length > 0 && (
+                                                                <div className="space-y-2 mt-2 pt-2 border-t border-border/50">
+                                                                    {translationData.meanings.map((m, idx) => (
+                                                                        <div key={idx} className="text-sm">
+                                                                            <span className="text-xs font-semibold text-primary/70 italic mr-2">{m.partOfSpeech}</span>
+                                                                            <span className="text-muted-foreground">{m.definitions[0]}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : null}
+
+                                                    {!translating && selectedWord && (
+                                                        <div className="space-y-3 mt-4 border-t border-border/50 pt-3">
+                                                            <Input
+                                                                placeholder="Tags (comma separated, e.g. verb, hard)"
+                                                                value={tagsInput}
+                                                                onChange={(e) => setTagsInput(e.target.value)}
+                                                                className="h-8 text-xs rounded-xl bg-muted/50 border-none"
+                                                            />
+                                                            <Button onClick={handleSaveWord} className="w-full rounded-xl gap-2" variant="secondary">
+                                                                <BookmarkPlus className="h-4 w-4" /> Save to Word Bank
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>{" "}
-                            </span>
-                        );
-                    })}
-                </p>
+                                            </PopoverContent>
+                                        </Popover>{" "}
+                                    </span>
+                                );
+                            })}
+                        </p>
+                    )
+                })}
             </div>
         </div>
     );

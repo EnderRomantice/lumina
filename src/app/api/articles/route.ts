@@ -12,16 +12,32 @@ export async function GET(req: Request) {
 
         const { searchParams } = new URL(req.url);
         const search = searchParams.get("search");
+        const tab = searchParams.get("tab") || "my"; // "my" or "shared"
 
-        let whereClause = {};
+        let whereClause: any = {};
+
+        if (tab === "shared") {
+            // Show public articles not created by the user (or all public)
+            whereClause = { isPublic: true };
+        } else {
+            // "my" articles
+            whereClause = { userId: (session.user as any).id };
+        }
+
         if (search) {
-            whereClause = { title: { contains: search } };
+            whereClause.title = { contains: search };
         }
 
         const articles = await prisma.article.findMany({
             where: whereClause,
             orderBy: { createdAt: "desc" },
-            select: { id: true, title: true, createdAt: true }, // Don't fetch full content for list
+            select: {
+                id: true,
+                title: true,
+                createdAt: true,
+                userId: true,
+                user: { select: { name: true, email: true } }
+            },
         });
 
         return NextResponse.json(articles);
@@ -38,7 +54,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
-        const { title, content } = await req.json();
+        const { title, content, isPublic = true } = await req.json();
 
         if (!title || !content) {
             return NextResponse.json({ message: "Title and content are required" }, { status: 400 });
@@ -48,6 +64,8 @@ export async function POST(req: Request) {
             data: {
                 title,
                 content,
+                isPublic,
+                userId: (session.user as any).id
             },
         });
 

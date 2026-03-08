@@ -85,6 +85,41 @@ export default function WordsPage() {
         window.speechSynthesis.speak(utterance);
     };
 
+    const renderTranslation = (translationStr: string) => {
+        try {
+            const data = JSON.parse(translationStr);
+            if (data && data.translation) {
+                return (
+                    <div className="space-y-2">
+                        <div>
+                            <p className="text-sm font-medium text-foreground pb-1">
+                                {data.translation}
+                            </p>
+                            {data.phonetic && (
+                                <p className="text-[11px] text-muted-foreground font-mono bg-background/50 px-1.5 py-0.5 rounded-md inline-block">
+                                    {data.phonetic}
+                                </p>
+                            )}
+                        </div>
+                        {data.meanings && data.meanings.length > 0 && (
+                            <div className="space-y-1 mt-1.5 pt-1.5 border-t border-border/30">
+                                {data.meanings.map((m: any, idx: number) => (
+                                    <div key={idx} className="text-xs">
+                                        <span className="font-semibold text-primary/70 italic mr-1">{m.partOfSpeech}</span>
+                                        <span className="text-muted-foreground line-clamp-2">{m.definitions[0]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+        } catch {
+            return <p className="text-sm font-sans text-foreground/80 leading-relaxed">{translationStr}</p>;
+        }
+        return <p className="text-sm font-sans text-foreground/80 leading-relaxed">{translationStr}</p>;
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center py-20">
@@ -158,7 +193,7 @@ export default function WordsPage() {
 
                             <CardContent className="pb-4 flex-1">
                                 <div className="bg-muted/30 p-3 rounded-2xl min-h-[80px]">
-                                    <p className="text-sm font-sans text-foreground/80 leading-relaxed">{word.translation}</p>
+                                    {renderTranslation(word.translation)}
                                 </div>
                                 <div className="mt-4 flex flex-col gap-1 items-end">
                                     <p className="text-xs text-muted-foreground font-medium">Memory Strength</p>

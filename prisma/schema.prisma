@@ -10,11 +10,13 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
   password  String
   name      String?
+  language  String    @default("zh") // Target translation language: 'en', 'zh', 'zh-TW'
   words     Word[]
+  articles  Article[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -38,6 +40,10 @@ model Article {
   id        String   @id @default(cuid())
   title     String
   content   String
+  isPublic  Boolean  @default(true)
+  reports   String   @default("") // Comma-separated user IDs who reported this
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
