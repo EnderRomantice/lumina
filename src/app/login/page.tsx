@@ -62,8 +62,8 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex justify-center items-center min-h-[70vh] px-4 animate-in zoom-in-95 duration-500">
-            <Card className="w-full max-w-md rounded-3xl border-border/50 shadow-xl">
+        <div className="flex justify-center items-start pt-[10vh] md:items-center min-h-[70vh] px-4 pb-12 animate-in zoom-in-95 duration-500">
+            <Card className="w-full max-w-md rounded-3xl border-border/50 shadow-xl mt-4 md:mt-0">
                 <CardHeader className="space-y-2 text-center pt-8">
                     <CardTitle className="text-3xl font-serif font-bold text-primary">
                         {isRegistering ? "Create your account" : "Welcome back"}
@@ -73,11 +73,11 @@ export default function LoginPage() {
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
-                    <CardContent className="space-y-4 pt-4 px-8">
+                    <CardContent className="space-y-4 pt-4 pb-6 px-8">
                         {isRegistering && (
                             <div className="space-y-2">
                                 <Input
-                                    className="rounded-xl px-4 py-6 bg-muted/50 border-none"
+                                    className="h-14 rounded-xl px-4 bg-muted/50 border-none"
                                     placeholder="Your Name"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
@@ -87,7 +87,7 @@ export default function LoginPage() {
                         )}
                         <div className="space-y-2">
                             <Input
-                                className="rounded-xl px-4 py-6 bg-muted/50 border-none"
+                                className="h-14 rounded-xl px-4 bg-muted/50 border-none"
                                 type="email"
                                 placeholder="Email address"
                                 value={email}
@@ -97,7 +97,7 @@ export default function LoginPage() {
                         </div>
                         <div className="space-y-2">
                             <Input
-                                className="rounded-xl px-4 py-6 bg-muted/50 border-none"
+                                className="h-14 rounded-xl px-4 bg-muted/50 border-none"
                                 type="password"
                                 placeholder="Password"
                                 value={password}
@@ -107,7 +107,7 @@ export default function LoginPage() {
                         </div>
                     </CardContent>
                     <CardFooter className="flex-col gap-4 pb-8 px-8">
-                        <Button className="w-full rounded-xl py-6 text-base" type="submit" disabled={loading}>
+                        <Button className="w-full h-14 rounded-xl text-base" type="submit" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {isRegistering ? "Sign Up" : "Sign In"}
                         </Button>
